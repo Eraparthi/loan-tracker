@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>My Loan Tracker</title>
+  <title>Loan Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -10,7 +10,7 @@
 
 <header class="header">
   <h1>💳 Loan Tracker</h1>
-  <p>Track all your loans in one place</p>
+  <p>Never miss an EMI</p>
 </header>
 
 <section class="dashboard">
@@ -29,12 +29,13 @@
 </section>
 
 <section class="add-loan">
-  <h2>Add New Loan</h2>
+  <h2>Add Loan</h2>
   <form id="loanForm">
-    <input id="loanName" placeholder="Loan Name (Home, Car, Personal)" required>
+    <input id="loanName" placeholder="Loan Name" required>
     <input id="principal" type="number" placeholder="Principal Amount" required>
     <input id="interest" type="number" step="0.1" placeholder="Interest Rate (%)" required>
     <input id="tenure" type="number" placeholder="Tenure (Months)" required>
+    <input id="emiDay" type="number" min="1" max="28" placeholder="EMI Day (1–28)" required>
     <input id="startDate" type="date" required>
     <button>Add Loan</button>
   </form>
