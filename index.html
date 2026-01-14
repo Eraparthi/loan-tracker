@@ -9,6 +9,19 @@
 </head>
 <body>
 
+<!-- 🔐 LOCK SCREEN -->
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-card">
+    <h2 id="lockTitle">Set PIN</h2>
+    <input id="pinInput" type="password" maxlength="4" placeholder="Enter 4-digit PIN">
+    <button onclick="handlePin()">Continue</button>
+    <p id="pinMsg"></p>
+  </div>
+</div>
+
+<!-- 🔓 APP CONTENT -->
+<div id="appContent" class="hidden">
+
 <header class="header">
   <h1>💳 Loan Tracker</h1>
   <p>Never miss an EMI</p>
@@ -55,6 +68,8 @@
 </section>
 
 <section class="loan-list" id="loanList"></section>
+
+</div>
 
 <script src="script.js"></script>
 </body>
