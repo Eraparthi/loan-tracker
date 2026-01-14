@@ -1,5 +1,8 @@
 let loans = JSON.parse(localStorage.getItem("loans")) || [];
 
+let emiChartInstance = null;
+let outstandingChartInstance = null;
+
 const loanForm = document.getElementById("loanForm");
 const loanList = document.getElementById("loanList");
 
@@ -32,10 +35,7 @@ function calculateEMI(P, R, N) {
 function getNextEmiDate(startDate, emiDay) {
   const today = new Date();
   let date = new Date(today.getFullYear(), today.getMonth(), emiDay);
-
-  if (date < today) {
-    date.setMonth(date.getMonth() + 1);
-  }
+  if (date < today) date.setMonth(date.getMonth() + 1);
   return date.toISOString().split("T")[0];
 }
 
@@ -43,6 +43,7 @@ function updateApp() {
   localStorage.setItem("loans", JSON.stringify(loans));
   renderDashboard();
   renderLoans();
+  renderCharts();
 }
 
 function renderDashboard() {
@@ -63,15 +64,15 @@ function renderLoans() {
 
   loans.forEach(l => {
     const dueDate = new Date(l.nextEmi);
-    let statusClass = "upcoming";
-    let statusText = "Upcoming";
+    let status = "Upcoming";
+    let cls = "upcoming";
 
     if (l.paid >= l.tenure) {
-      statusClass = "completed";
-      statusText = "Completed";
+      status = "Completed";
+      cls = "completed";
     } else if (dueDate < today) {
-      statusClass = "overdue";
-      statusText = "Overdue";
+      status = "Overdue";
+      cls = "overdue";
     }
 
     const div = document.createElement("div");
@@ -80,7 +81,7 @@ function renderLoans() {
       <h3>${l.name}</h3>
       <p>EMI: ₹${l.emi}</p>
       <p>Next EMI: ${l.nextEmi}</p>
-      <p class="status ${statusClass}">${statusText}</p>
+      <p class="status ${cls}">${status}</p>
       <div class="actions">
         <button onclick="payEmi(${l.id})">Pay EMI</button>
         <button onclick="deleteLoan(${l.id})">Delete</button>
@@ -105,6 +106,45 @@ function payEmi(id) {
 function deleteLoan(id) {
   loans = loans.filter(l => l.id !== id);
   updateApp();
+}
+
+function renderCharts() {
+  const labels = loans.map(l => l.name);
+  const emiData = loans.map(l => l.emi);
+  const outstandingData = loans.map(
+    l => l.emi * (l.tenure - l.paid)
+  );
+
+  if (emiChartInstance) emiChartInstance.destroy();
+  if (outstandingChartInstance) outstandingChartInstance.destroy();
+
+  emiChartInstance = new Chart(
+    document.getElementById("emiChart"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Monthly EMI",
+          data: emiData
+        }]
+      }
+    }
+  );
+
+  outstandingChartInstance = new Chart(
+    document.getElementById("outstandingChart"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Outstanding Amount",
+          data: outstandingData
+        }]
+      }
+    }
+  );
 }
 
 updateApp();
