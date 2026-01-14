@@ -5,7 +5,6 @@
   <title>Loan Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -48,6 +47,11 @@
   <canvas id="emiChart" height="200"></canvas>
   <br>
   <canvas id="outstandingChart" height="200"></canvas>
+</section>
+
+<section class="add-loan">
+  <h2>📤 Export</h2>
+  <button onclick="exportToCSV()">Export to Excel</button>
 </section>
 
 <section class="loan-list" id="loanList"></section>
