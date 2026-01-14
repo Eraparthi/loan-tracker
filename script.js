@@ -147,4 +147,52 @@ function renderCharts() {
   );
 }
 
+/* =======================
+   PHASE 3: CSV EXPORT
+======================= */
+function exportToCSV() {
+  if (loans.length === 0) {
+    alert("No loans to export");
+    return;
+  }
+
+  let csv = [
+    [
+      "Loan Name",
+      "Principal",
+      "Interest %",
+      "EMI",
+      "EMI Day",
+      "Paid Months",
+      "Remaining Months",
+      "Next EMI Date",
+      "Outstanding Amount"
+    ].join(",")
+  ];
+
+  loans.forEach(l => {
+    csv.push([
+      l.name,
+      l.principal,
+      l.interest,
+      l.emi,
+      l.emiDay,
+      l.paid,
+      l.tenure - l.paid,
+      l.nextEmi,
+      l.emi * (l.tenure - l.paid)
+    ].join(","));
+  });
+
+  const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "loan-tracker-data.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
 updateApp();
