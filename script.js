@@ -12,9 +12,11 @@ loanForm.addEventListener("submit", e => {
     principal: +principal.value,
     interest: +interest.value,
     tenure: +tenure.value,
+    emiDay: +emiDay.value,
     startDate: startDate.value,
     emi: calculateEMI(principal.value, interest.value, tenure.value),
-    paid: 0
+    paid: 0,
+    nextEmi: getNextEmiDate(startDate.value, +emiDay.value)
   };
 
   loans.push(loan);
@@ -25,6 +27,16 @@ loanForm.addEventListener("submit", e => {
 function calculateEMI(P, R, N) {
   const r = R / 12 / 100;
   return Math.round((P * r * Math.pow(1 + r, N)) / (Math.pow(1 + r, N) - 1));
+}
+
+function getNextEmiDate(startDate, emiDay) {
+  const today = new Date();
+  let date = new Date(today.getFullYear(), today.getMonth(), emiDay);
+
+  if (date < today) {
+    date.setMonth(date.getMonth() + 1);
+  }
+  return date.toISOString().split("T")[0];
 }
 
 function updateApp() {
@@ -47,19 +59,31 @@ function renderDashboard() {
 
 function renderLoans() {
   loanList.innerHTML = "";
+  const today = new Date();
 
   loans.forEach(l => {
+    const dueDate = new Date(l.nextEmi);
+    let statusClass = "upcoming";
+    let statusText = "Upcoming";
+
+    if (l.paid >= l.tenure) {
+      statusClass = "completed";
+      statusText = "Completed";
+    } else if (dueDate < today) {
+      statusClass = "overdue";
+      statusText = "Overdue";
+    }
+
     const div = document.createElement("div");
     div.className = "loan-card";
     div.innerHTML = `
       <h3>${l.name}</h3>
-      <div class="loan-meta">
-        EMI: ₹${l.emi} <br>
-        Paid: ${l.paid}/${l.tenure} months
-      </div>
+      <p>EMI: ₹${l.emi}</p>
+      <p>Next EMI: ${l.nextEmi}</p>
+      <p class="status ${statusClass}">${statusText}</p>
       <div class="actions">
         <button onclick="payEmi(${l.id})">Pay EMI</button>
-        <button class="delete" onclick="deleteLoan(${l.id})">Delete</button>
+        <button onclick="deleteLoan(${l.id})">Delete</button>
       </div>
     `;
     loanList.appendChild(div);
@@ -68,7 +92,13 @@ function renderLoans() {
 
 function payEmi(id) {
   const loan = loans.find(l => l.id === id);
-  if (loan.paid < loan.tenure) loan.paid++;
+  if (!loan || loan.paid >= loan.tenure) return;
+
+  loan.paid++;
+  const next = new Date(loan.nextEmi);
+  next.setMonth(next.getMonth() + 1);
+  loan.nextEmi = next.toISOString().split("T")[0];
+
   updateApp();
 }
 
