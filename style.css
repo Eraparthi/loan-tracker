@@ -1,12 +1,76 @@
-/* 🔐 Lock Screen */
+/* GLOBAL */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f3f4f6;
+}
+
+/* FORCE HIDE APP */
+#appContent {
+  display: none;
+}
+
+/* HEADER */
+.header {
+  background: #111827;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+/* DASHBOARD */
+.dashboard {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+}
+.stat {
+  background: white;
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* SECTIONS */
+.add-loan {
+  background: white;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+/* LOANS */
+.loan-card {
+  background: white;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+/* LOCK SCREEN */
 .lock-screen {
   position: fixed;
   inset: 0;
   background: #111827;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 999;
+  justify-content: center;
+  z-index: 9999;
 }
 
 .lock-card {
@@ -14,32 +78,10 @@
   padding: 25px;
   border-radius: 12px;
   width: 90%;
-  max-width: 320px;
+  max-width: 300px;
   text-align: center;
-}
-
-.lock-card h2 {
-  margin-top: 0;
-}
-
-.lock-card input {
-  width: 100%;
-  padding: 12px;
-  font-size: 18px;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.lock-card button {
-  width: 100%;
-  padding: 12px;
 }
 
 #pinMsg {
   color: red;
-  font-size: 14px;
-}
-
-.hidden {
-  display: none;
 }
