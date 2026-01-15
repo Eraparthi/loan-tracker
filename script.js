@@ -1,130 +1,159 @@
-/* 🔐 PIN LOCK */
+/* PIN */
+const pinStored = localStorage.getItem("pin");
 const lockScreen = document.getElementById("lockScreen");
-const appContent = document.getElementById("appContent");
-const lockTitle = document.getElementById("lockTitle");
+const app = document.getElementById("app");
 const pinInput = document.getElementById("pinInput");
 const pinMsg = document.getElementById("pinMsg");
+const lockTitle = document.getElementById("lockTitle");
 
-const storedPin = localStorage.getItem("loanAppPin");
+lockTitle.textContent = pinStored ? "Enter PIN" : "Set PIN";
 
-lockScreen.style.display = "flex";
-appContent.style.display = "none";
-lockTitle.textContent = storedPin ? "Enter PIN" : "Set PIN";
-
-function handlePin() {
-  const pin = pinInput.value.trim();
-  if (!/^\d{4}$/.test(pin)) {
-    pinMsg.textContent = "Enter valid 4-digit PIN";
+function unlockApp() {
+  const p = pinInput.value;
+  if (!/^\d{4}$/.test(p)) {
+    pinMsg.textContent = "Invalid PIN";
     return;
   }
-  if (!storedPin) {
-    localStorage.setItem("loanAppPin", pin);
-    unlock();
-  } else if (pin === storedPin) {
-    unlock();
-  } else {
-    pinMsg.textContent = "Incorrect PIN";
+  if (!pinStored) {
+    localStorage.setItem("pin", p);
+  } else if (p !== pinStored) {
+    pinMsg.textContent = "Wrong PIN";
+    return;
   }
-}
-
-function unlock() {
   lockScreen.style.display = "none";
-  appContent.style.display = "block";
+  app.style.display = "block";
+  render();
 }
 
-/* APP LOGIC */
-let loans = JSON.parse(localStorage.getItem("loans")) || [];
-let emiChartInstance, outstandingChartInstance;
+/* DATA */
+let loans = JSON.parse(localStorage.getItem("loans") || "[]");
 
-loanForm.addEventListener("submit", e => {
+const loanForm = document.getElementById("loanForm");
+
+loanForm.onsubmit = e => {
   e.preventDefault();
+  const id = editId.value;
   const loan = {
-    id: Date.now(),
+    id: id || Date.now(),
     name: loanName.value,
     principal: +principal.value,
     interest: +interest.value,
     tenure: +tenure.value,
     emiDay: +emiDay.value,
     startDate: startDate.value,
-    paid: 0,
-    emi: calcEMI(principal.value, interest.value, tenure.value),
-    nextEmi: nextEmiDate(emiDay.value)
+    paid: 0
   };
-  loans.push(loan);
+  if (id) loans = loans.map(l => l.id == id ? loan : l);
+  else loans.push(loan);
   save();
   loanForm.reset();
-});
+};
 
-function calcEMI(P, R, N) {
-  const r = R / 1200;
-  return Math.round((P * r * Math.pow(1 + r, N)) / (Math.pow(1 + r, N) - 1));
+function emi(p, r, n) {
+  r = r / 1200;
+  return Math.round((p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1));
 }
 
-function nextEmiDate(day) {
+function nextDate(day) {
   const d = new Date();
   let n = new Date(d.getFullYear(), d.getMonth(), day);
   if (n < d) n.setMonth(n.getMonth() + 1);
-  return n.toISOString().split("T")[0];
-}
-
-function save() {
-  localStorage.setItem("loans", JSON.stringify(loans));
-  render();
+  return n;
 }
 
 function render() {
+  localStorage.setItem("loans", JSON.stringify(loans));
   loanList.innerHTML = "";
-  totalLoans.textContent = loans.length;
-  totalEmi.textContent = "₹" + loans.reduce((s, l) => s + l.emi, 0);
-  totalOutstanding.textContent = "₹" + loans.reduce((s, l) => s + l.emi * (l.tenure - l.paid), 0);
+  let totalEmiVal = 0;
+  let totalOut = 0;
 
   loans.forEach(l => {
+    const e = emi(l.principal, l.interest, l.tenure);
+    const out = e * (l.tenure - l.paid);
+    totalEmiVal += e;
+    totalOut += out;
+
+    const due = nextDate(l.emiDay);
+    const status = l.paid >= l.tenure ? "completed" :
+      due < new Date() ? "overdue" : "upcoming";
+
     loanList.innerHTML += `
-      <div class="loan-card">
+      <div class="loan">
         <h3>${l.name}</h3>
-        <p>EMI: ₹${l.emi}</p>
-        <p>Next EMI: ${l.nextEmi}</p>
-        <button onclick="pay(${l.id})">Pay EMI</button>
+        <span class="badge ${status}">${status}</span>
+        <p>EMI: ₹${e}</p>
+        <p>Remaining: ₹${out}</p>
+        <div class="actions">
+          <button onclick="pay(${l.id})">Pay EMI</button>
+          <button onclick="editLoan(${l.id})">Edit</button>
+          <button class="danger" onclick="remove(${l.id})">Delete</button>
+        </div>
       </div>`;
   });
 
-  charts();
+  totalLoans.textContent = loans.length;
+  totalEmi.textContent = "₹" + totalEmiVal;
+  totalOutstanding.textContent = "₹" + totalOut;
+
+  drawCharts();
 }
 
 function pay(id) {
   const l = loans.find(x => x.id === id);
-  if (!l || l.paid >= l.tenure) return;
-  l.paid++;
-  const d = new Date(l.nextEmi);
-  d.setMonth(d.getMonth() + 1);
-  l.nextEmi = d.toISOString().split("T")[0];
-  save();
+  if (l && l.paid < l.tenure) l.paid++;
+  render();
 }
 
-function charts() {
-  const labels = loans.map(l => l.name);
-  if (emiChartInstance) emiChartInstance.destroy();
-  if (outstandingChartInstance) outstandingChartInstance.destroy();
-
-  emiChartInstance = new Chart(emiChart, {
-    type: "bar",
-    data: { labels, datasets: [{ label: "EMI", data: loans.map(l => l.emi) }] }
-  });
-
-  outstandingChartInstance = new Chart(outstandingChart, {
-    type: "bar",
-    data: { labels, datasets: [{ label: "Outstanding", data: loans.map(l => l.emi * (l.tenure - l.paid)) }] }
-  });
+function editLoan(id) {
+  const l = loans.find(x => x.id === id);
+  editId.value = l.id;
+  loanName.value = l.name;
+  principal.value = l.principal;
+  interest.value = l.interest;
+  tenure.value = l.tenure;
+  emiDay.value = l.emiDay;
+  startDate.value = l.startDate;
 }
 
-function exportToCSV() {
-  let csv = "Loan,EMI,Outstanding\n";
-  loans.forEach(l => csv += `${l.name},${l.emi},${l.emi * (l.tenure - l.paid)}\n`);
-  const blob = new Blob([csv], { type: "text/csv" });
+function remove(id) {
+  if (confirm("Delete this loan?")) {
+    loans = loans.filter(l => l.id !== id);
+    render();
+  }
+}
+
+function exportCSV() {
+  let csv = "Name,EMI,Outstanding\n";
+  loans.forEach(l => {
+    const e = emi(l.principal, l.interest, l.tenure);
+    csv += `${l.name},${e},${e * (l.tenure - l.paid)}\n`;
+  });
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([csv]));
   a.download = "loans.csv";
   a.click();
 }
 
-render();
+function clearAll() {
+  if (confirm("Clear all data?")) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+function drawCharts() {
+  if (window.c1) c1.destroy();
+  if (window.c2) c2.destroy();
+
+  c1 = new Chart(emiChart, {
+    type: "bar",
+    data: { labels: loans.map(l => l.name),
+      datasets: [{ label: "EMI", data: loans.map(l => emi(l.principal, l.interest, l.tenure)) }] }
+  });
+
+  c2 = new Chart(outstandingChart, {
+    type: "line",
+    data: { labels: loans.map(l => l.name),
+      datasets: [{ label: "Outstanding", data: loans.map(l => emi(l.principal, l.interest, l.tenure) * (l.tenure - l.paid)) }] }
+  });
+}
