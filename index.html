@@ -17,7 +17,14 @@
 <div id="lockScreen">
   <div class="lockCard">
     <h2 id="lockTitle"></h2>
-    <input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="4-digit PIN">
+    <input
+  id="pinInput"
+  type="tel"
+  inputmode="numeric"
+  maxlength="4"
+  placeholder="Enter 4-digit PIN"
+  class="pinInput"
+/>
     <button onclick="unlockApp()">Unlock</button>
     <p id="pinMsg"></p>
   </div>
