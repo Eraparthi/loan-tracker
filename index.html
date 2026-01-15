@@ -16,66 +16,54 @@
 <!-- 🔒 LOCK SCREEN -->
 <div id="lockScreen">
   <div class="lockCard">
-    <h2 id="lockTitle"></h2>
+    <h2 id="lockTitle">Set PIN</h2>
     <input
-  id="pinInput"
-  type="tel"
-  inputmode="numeric"
-  maxlength="4"
-  placeholder="Enter 4-digit PIN"
-  class="pinInput"
-/>
-    <button onclick="unlockApp()">Unlock</button>
+      id="pinInput"
+      type="password"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="Enter 4-digit PIN"
+    >
+    <button onclick="handlePin()">Continue</button>
     <p id="pinMsg"></p>
   </div>
 </div>
 
 <!-- 📱 APP -->
 <div id="app">
-
 <header>
   <h1>Loan Tracker Pro</h1>
   <p>Private • Offline • Smart</p>
 </header>
 
 <section class="stats">
-  <div><span>Total Loans</span><h2 id="totalLoans">0</h2></div>
+  <div><span>Loans</span><h2 id="totalLoans">0</h2></div>
   <div><span>Monthly EMI</span><h2 id="totalEmi">₹0</h2></div>
   <div><span>Outstanding</span><h2 id="totalOutstanding">₹0</h2></div>
   <div><span>Health</span><h2 id="healthScore">100</h2></div>
 </section>
 
 <section class="card">
-  <h2 id="formTitle">Add Loan</h2>
+  <h2>Add Loan</h2>
   <form id="loanForm">
     <input type="hidden" id="editId">
-
     <input id="loanName" placeholder="Loan Name" required>
-    <input id="loanType" placeholder="Type (Home / Car / Personal)">
+    <input id="loanType" placeholder="Type (Home / Car)">
     <input id="principal" type="number" placeholder="Principal (optional)">
     <input id="interest" type="number" step="0.1" placeholder="Interest % (optional)">
     <input id="tenure" type="number" placeholder="Tenure (months)" required>
-    <input id="emiAmount" type="number" placeholder="EMI Amount (optional override)">
-    <input id="emiDay" type="number" min="1" max="28" placeholder="EMI Day (1–28)" required>
-
+    <input id="emiAmount" type="number" placeholder="EMI (optional override)">
+    <input id="emiDay" type="number" min="1" max="28" placeholder="EMI day (1–28)" required>
     <button type="submit">Save Loan</button>
   </form>
-</section>
-
-<section class="card">
-  <h2>Insights</h2>
-  <canvas id="emiChart"></canvas>
-  <canvas id="outstandingChart"></canvas>
 </section>
 
 <section id="loanList"></section>
 
 <section class="card">
   <button onclick="exportCSV()">Export Excel</button>
-  <button class="danger" onclick="lockNow()">Lock App</button>
-  <button class="danger" onclick="clearAll()">Clear All Data</button>
+  <button class="danger" onclick="lockApp()">Lock App</button>
 </section>
-
 </div>
 
 <script src="script.js"></script>
@@ -84,6 +72,5 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
 </script>
-
 </body>
 </html>
