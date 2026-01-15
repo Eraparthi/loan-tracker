@@ -1,27 +1,25 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f3f4f6;
+  background: #f1f5f9;
 }
 
-#appContent {
-  display: none;
-}
+#app { display: none; }
 
-.header {
-  background: #111827;
+header {
+  background: #0f172a;
   color: white;
-  padding: 20px;
   text-align: center;
+  padding: 20px;
 }
 
-.dashboard {
+.summary {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 10px;
 }
 
-.stat {
+.summary div {
   background: white;
   flex: 1;
   padding: 10px;
@@ -29,15 +27,14 @@ body {
   text-align: center;
 }
 
-.add-loan {
+.card {
   background: white;
   margin: 10px;
   padding: 15px;
   border-radius: 10px;
 }
 
-input,
-button {
+input, button {
   width: 100%;
   padding: 10px;
   margin-top: 8px;
@@ -51,32 +48,49 @@ button {
   border-radius: 6px;
 }
 
-.loan-card {
+button.danger {
+  background: #dc2626;
+}
+
+.loan {
   background: white;
   margin: 10px;
   padding: 15px;
   border-radius: 10px;
 }
 
-.lock-screen {
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: white;
+}
+
+.upcoming { background: #16a34a; }
+.overdue { background: #dc2626; }
+.completed { background: #6b7280; }
+
+.actions button {
+  margin-top: 6px;
+}
+
+/* LOCK */
+#lockScreen {
   position: fixed;
   inset: 0;
-  background: #111827;
+  background: #020617;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
 }
 
-.lock-card {
+.lockBox {
   background: white;
   padding: 25px;
   border-radius: 12px;
   width: 90%;
-  max-width: 300px;
+  max-width: 280px;
   text-align: center;
 }
 
-#pinMsg {
-  color: red;
-}
+#pinMsg { color: red; }
