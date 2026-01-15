@@ -1,6 +1,6 @@
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open("loan-x").then(c =>
+    caches.open("loan-pro").then(c =>
       c.addAll(["./","./index.html","./style.css","./script.js"])
     )
   );
