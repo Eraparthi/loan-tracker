@@ -1,26 +1,15 @@
 /* PIN */
-const pinStored = localStorage.getItem("pin");
-const lockScreen = document.getElementById("lockScreen");
+const lock = document.getElementById("lock");
 const app = document.getElementById("app");
-const pinInput = document.getElementById("pinInput");
-const pinMsg = document.getElementById("pinMsg");
-const lockTitle = document.getElementById("lockTitle");
-
+const pinStored = localStorage.getItem("pin");
 lockTitle.textContent = pinStored ? "Enter PIN" : "Set PIN";
 
-function unlockApp() {
+function unlock() {
   const p = pinInput.value;
-  if (!/^\d{4}$/.test(p)) {
-    pinMsg.textContent = "Invalid PIN";
-    return;
-  }
-  if (!pinStored) {
-    localStorage.setItem("pin", p);
-  } else if (p !== pinStored) {
-    pinMsg.textContent = "Wrong PIN";
-    return;
-  }
-  lockScreen.style.display = "none";
+  if (!/^\d{4}$/.test(p)) return pinMsg.textContent = "Invalid PIN";
+  if (!pinStored) localStorage.setItem("pin", p);
+  else if (p !== pinStored) return pinMsg.textContent = "Wrong PIN";
+  lock.style.display = "none";
   app.style.display = "block";
   render();
 }
@@ -28,72 +17,89 @@ function unlockApp() {
 /* DATA */
 let loans = JSON.parse(localStorage.getItem("loans") || "[]");
 
-const loanForm = document.getElementById("loanForm");
-
 loanForm.onsubmit = e => {
   e.preventDefault();
-  const id = editId.value;
+  const id = editId.value || Date.now();
+
   const loan = {
-    id: id || Date.now(),
+    id,
     name: loanName.value,
-    principal: +principal.value,
-    interest: +interest.value,
-    tenure: +tenure.value,
+    type: loanType.value || "General",
+    principal: +principal.value || 0,
+    interest: +interest.value || 0,
+    tenure: +tenure.value || 0,
+    emiAmount: +emiAmount.value || 0,
     emiDay: +emiDay.value,
-    startDate: startDate.value,
-    paid: 0
+    paid: editId.value ? loans.find(l => l.id == id).paid : 0
   };
-  if (id) loans = loans.map(l => l.id == id ? loan : l);
-  else loans.push(loan);
-  save();
+
+  loans = editId.value
+    ? loans.map(l => l.id == id ? loan : l)
+    : [...loans, loan];
+
   loanForm.reset();
+  editId.value = "";
+  formTitle.textContent = "Add Loan";
+  save();
 };
 
-function emi(p, r, n) {
-  r = r / 1200;
-  return Math.round((p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1));
+function calcEMI(l) {
+  if (l.emiAmount > 0) return l.emiAmount;
+  const r = l.interest / 1200;
+  return Math.round((l.principal * r * Math.pow(1 + r, l.tenure)) /
+         (Math.pow(1 + r, l.tenure) - 1));
 }
 
-function nextDate(day) {
-  const d = new Date();
-  let n = new Date(d.getFullYear(), d.getMonth(), day);
-  if (n < d) n.setMonth(n.getMonth() + 1);
-  return n;
+function nextEmiDate(day) {
+  const t = new Date();
+  let d = new Date(t.getFullYear(), t.getMonth(), day);
+  if (d < t) d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+function save() {
+  localStorage.setItem("loans", JSON.stringify(loans));
+  render();
 }
 
 function render() {
-  localStorage.setItem("loans", JSON.stringify(loans));
   loanList.innerHTML = "";
-  let totalEmiVal = 0;
-  let totalOut = 0;
+  let totalE = 0, totalO = 0, overdueCount = 0;
+
+  loans.sort((a,b) => nextEmiDate(a.emiDay) - nextEmiDate(b.emiDay));
 
   loans.forEach(l => {
-    const e = emi(l.principal, l.interest, l.tenure);
+    const e = calcEMI(l);
     const out = e * (l.tenure - l.paid);
-    totalEmiVal += e;
-    totalOut += out;
+    totalE += e;
+    totalO += out;
 
-    const due = nextDate(l.emiDay);
-    const status = l.paid >= l.tenure ? "completed" :
-      due < new Date() ? "overdue" : "upcoming";
+    const due = nextEmiDate(l.emiDay);
+    const daysLeft = Math.ceil((due - new Date()) / 86400000);
+
+    let status = "upcoming";
+    if (l.paid >= l.tenure) status = "completed";
+    else if (due < new Date()) { status = "overdue"; overdueCount++; }
 
     loanList.innerHTML += `
       <div class="loan">
-        <h3>${l.name}</h3>
+        <h3>${l.name} <small>(${l.type})</small></h3>
         <span class="badge ${status}">${status}</span>
         <p>EMI: ₹${e}</p>
         <p>Remaining: ₹${out}</p>
-        <div class="actions">
-          <button onclick="pay(${l.id})">Pay EMI</button>
-          <button onclick="editLoan(${l.id})">Edit</button>
-          <button class="danger" onclick="remove(${l.id})">Delete</button>
-        </div>
+        <p>${status === "upcoming" ? daysLeft + " days left" : ""}</p>
+        <button onclick="pay(${l.id})">Pay EMI</button>
+        <button onclick="undo(${l.id})">Undo</button>
+        <button onclick="editLoan(${l.id})">Edit</button>
+        <button class="danger" onclick="removeLoan(${l.id})">Delete</button>
       </div>`;
   });
 
   totalLoans.textContent = loans.length;
-  totalEmi.textContent = "₹" + totalEmiVal;
-  totalOutstanding.textContent = "₹" + totalOut;
+  totalEmi.textContent = "₹" + totalE;
+  totalOutstanding.textContent = "₹" + totalO;
+
+  healthScore.textContent = Math.max(0, 100 - overdueCount * 15);
 
   drawCharts();
 }
@@ -101,32 +107,40 @@ function render() {
 function pay(id) {
   const l = loans.find(x => x.id === id);
   if (l && l.paid < l.tenure) l.paid++;
-  render();
+  save();
+}
+
+function undo(id) {
+  const l = loans.find(x => x.id === id);
+  if (l && l.paid > 0) l.paid--;
+  save();
 }
 
 function editLoan(id) {
   const l = loans.find(x => x.id === id);
   editId.value = l.id;
   loanName.value = l.name;
+  loanType.value = l.type;
   principal.value = l.principal;
   interest.value = l.interest;
   tenure.value = l.tenure;
+  emiAmount.value = l.emiAmount;
   emiDay.value = l.emiDay;
-  startDate.value = l.startDate;
+  formTitle.textContent = "Edit Loan";
 }
 
-function remove(id) {
+function removeLoan(id) {
   if (confirm("Delete this loan?")) {
     loans = loans.filter(l => l.id !== id);
-    render();
+    save();
   }
 }
 
 function exportCSV() {
-  let csv = "Name,EMI,Outstanding\n";
+  let csv = "Loan,Type,EMI,Outstanding\n";
   loans.forEach(l => {
-    const e = emi(l.principal, l.interest, l.tenure);
-    csv += `${l.name},${e},${e * (l.tenure - l.paid)}\n`;
+    const e = calcEMI(l);
+    csv += `${l.name},${l.type},${e},${e * (l.tenure - l.paid)}\n`;
   });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv]));
@@ -148,12 +162,13 @@ function drawCharts() {
   c1 = new Chart(emiChart, {
     type: "bar",
     data: { labels: loans.map(l => l.name),
-      datasets: [{ label: "EMI", data: loans.map(l => emi(l.principal, l.interest, l.tenure)) }] }
+      datasets: [{ label: "EMI", data: loans.map(calcEMI) }] }
   });
 
   c2 = new Chart(outstandingChart, {
     type: "line",
     data: { labels: loans.map(l => l.name),
-      datasets: [{ label: "Outstanding", data: loans.map(l => emi(l.principal, l.interest, l.tenure) * (l.tenure - l.paid)) }] }
+      datasets: [{ label: "Outstanding",
+        data: loans.map(l => calcEMI(l) * (l.tenure - l.paid)) }] }
   });
 }
