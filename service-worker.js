@@ -1,13 +1,10 @@
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open("loan-app").then(cache =>
-      cache.addAll(["./", "./index.html", "./style.css", "./script.js"])
+    caches.open("loan-pro").then(c =>
+      c.addAll(["./","./index.html","./style.css","./script.js"])
     )
   );
 });
-
 self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
