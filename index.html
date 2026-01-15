@@ -19,7 +19,7 @@
     <h2 id="lockTitle">Set PIN</h2>
     <input
       id="pinInput"
-      type="password"
+      type="tel"
       inputmode="numeric"
       maxlength="4"
       placeholder="Enter 4-digit PIN"
@@ -31,6 +31,7 @@
 
 <!-- 📱 APP -->
 <div id="app">
+
 <header>
   <h1>Loan Tracker Pro</h1>
   <p>Private • Offline • Smart</p>
@@ -44,26 +45,39 @@
 </section>
 
 <section class="card">
-  <h2>Add Loan</h2>
+  <h2>Add / Edit Loan</h2>
   <form id="loanForm">
     <input type="hidden" id="editId">
     <input id="loanName" placeholder="Loan Name" required>
-    <input id="loanType" placeholder="Type (Home / Car)">
+    <input id="loanType" placeholder="Type (Home / Car / Personal)">
     <input id="principal" type="number" placeholder="Principal (optional)">
     <input id="interest" type="number" step="0.1" placeholder="Interest % (optional)">
     <input id="tenure" type="number" placeholder="Tenure (months)" required>
     <input id="emiAmount" type="number" placeholder="EMI (optional override)">
-    <input id="emiDay" type="number" min="1" max="28" placeholder="EMI day (1–28)" required>
+    <input id="emiDay" type="number" min="1" max="28" placeholder="EMI Day (1–28)" required>
     <button type="submit">Save Loan</button>
   </form>
+</section>
+
+<section class="card">
+  <h2>🔮 Smart Suggestions</h2>
+  <ul id="suggestions"></ul>
+</section>
+
+<section class="card">
+  <h2>📊 Insights</h2>
+  <canvas id="emiChart"></canvas>
+  <canvas id="outstandingChart"></canvas>
 </section>
 
 <section id="loanList"></section>
 
 <section class="card">
   <button onclick="exportCSV()">Export Excel</button>
-  <button class="danger" onclick="lockApp()">Lock App</button>
+  <button onclick="lockApp()" class="secondary">Lock App</button>
+  <button onclick="resetApp()" class="danger">Reset App</button>
 </section>
+
 </div>
 
 <script src="script.js"></script>
@@ -72,5 +86,6 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
 </script>
+
 </body>
 </html>
