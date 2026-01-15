@@ -98,4 +98,10 @@ button.danger {
   text-align: center;
 }
 
+.pinInput {
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 10px;
+  font-weight: 600;
+}
 #pinMsg { color:red; }
