@@ -1,13 +1,12 @@
-/* ========= PIN SYSTEM ========= */
+/* ---------- PIN SYSTEM ---------- */
 const lockScreen = document.getElementById("lockScreen");
 const app = document.getElementById("app");
-const pinInput = document.getElementById("pinInput");
-const pinMsg = document.getElementById("pinMsg");
-const lockTitle = document.getElementById("lockTitle");
 
-function storedPin() {
+function getPin() {
   return localStorage.getItem("loan_pin");
 }
+
+lockTitle.textContent = getPin() ? "Enter PIN" : "Set PIN";
 
 function handlePin() {
   const pin = pinInput.value.trim();
@@ -17,10 +16,10 @@ function handlePin() {
     return;
   }
 
-  if (!storedPin()) {
+  if (!getPin()) {
     localStorage.setItem("loan_pin", pin);
     openApp();
-  } else if (pin === storedPin()) {
+  } else if (pin === getPin()) {
     openApp();
   } else {
     pinMsg.textContent = "Incorrect PIN";
@@ -39,16 +38,16 @@ function lockApp() {
   app.style.display = "none";
   lockScreen.style.display = "flex";
   pinMsg.textContent = "";
-  lockTitle.textContent = "Enter PIN";
 }
 
-/* ========= LOAN LOGIC ========= */
+/* ---------- DATA ---------- */
 let loans = JSON.parse(localStorage.getItem("loans") || "[]");
 
 loanForm.onsubmit = e => {
   e.preventDefault();
+
   const loan = {
-    id: Date.now(),
+    id: editId.value || Date.now(),
     name: loanName.value,
     type: loanType.value || "General",
     principal: +principal.value || 0,
@@ -56,11 +55,16 @@ loanForm.onsubmit = e => {
     tenure: +tenure.value,
     emiAmount: +emiAmount.value || 0,
     emiDay: +emiDay.value,
-    paid: 0
+    paid: editId.value ? loans.find(l=>l.id==editId.value).paid : 0
   };
-  loans.push(loan);
-  save();
+
+  loans = editId.value
+    ? loans.map(l => l.id == loan.id ? loan : l)
+    : [...loans, loan];
+
   loanForm.reset();
+  editId.value = "";
+  save();
 };
 
 function calcEMI(l) {
@@ -77,24 +81,44 @@ function save() {
 
 function render() {
   loanList.innerHTML = "";
-  let totalE=0, totalO=0;
+  suggestions.innerHTML = "";
+
+  let totalE = 0, totalO = 0, overdue = 0;
 
   loans.forEach(l => {
     const emi = calcEMI(l);
+    const remaining = emi * (l.tenure - l.paid);
     totalE += emi;
-    totalO += emi * (l.tenure - l.paid);
+    totalO += remaining;
+
+    const due = new Date();
+    due.setDate(l.emiDay);
+    if (due < new Date()) overdue++;
 
     loanList.innerHTML += `
       <div class="loan">
-        <h3>${l.name}</h3>
+        <h3>${l.name} (${l.type})</h3>
         <p>EMI: ₹${emi}</p>
+        <p>Remaining: ₹${remaining}</p>
         <button onclick="pay(${l.id})">Pay EMI</button>
+        <button onclick="editLoan(${l.id})">Edit</button>
+        <button class="danger" onclick="removeLoan(${l.id})">Delete</button>
       </div>`;
   });
 
+  if (overdue > 0) {
+    suggestions.innerHTML += `<li>⚠️ ${overdue} loan(s) have EMI due</li>`;
+  }
+  if (loans.length > 0) {
+    suggestions.innerHTML += `<li>💡 Consider prepaying high-interest loans first</li>`;
+  }
+
   totalLoans.textContent = loans.length;
-  totalEmi.textContent = "₹"+totalE;
-  totalOutstanding.textContent = "₹"+totalO;
+  totalEmi.textContent = "₹" + totalE;
+  totalOutstanding.textContent = "₹" + totalO;
+  healthScore.textContent = Math.max(0, 100 - overdue * 15);
+
+  drawCharts();
 }
 
 function pay(id) {
@@ -103,11 +127,61 @@ function pay(id) {
   save();
 }
 
+function editLoan(id) {
+  const l = loans.find(x => x.id === id);
+  editId.value = l.id;
+  loanName.value = l.name;
+  loanType.value = l.type;
+  principal.value = l.principal;
+  interest.value = l.interest;
+  tenure.value = l.tenure;
+  emiAmount.value = l.emiAmount;
+  emiDay.value = l.emiDay;
+}
+
+function removeLoan(id) {
+  if (confirm("Delete loan?")) {
+    loans = loans.filter(l => l.id !== id);
+    save();
+  }
+}
+
 function exportCSV() {
-  let csv = "Loan,EMI\n";
-  loans.forEach(l => csv += `${l.name},${calcEMI(l)}\n`);
+  let csv = "Loan,EMI,Remaining\n";
+  loans.forEach(l => {
+    const e = calcEMI(l);
+    csv += `${l.name},${e},${e*(l.tenure-l.paid)}\n`;
+  });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv]));
   a.download = "loans.csv";
   a.click();
+}
+
+function resetApp() {
+  if (confirm("Reset everything?")) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+function drawCharts() {
+  if (window.c1) c1.destroy();
+  if (window.c2) c2.destroy();
+
+  c1 = new Chart(emiChart, {
+    type: "bar",
+    data: {
+      labels: loans.map(l => l.name),
+      datasets: [{ label: "EMI", data: loans.map(calcEMI) }]
+    }
+  });
+
+  c2 = new Chart(outstandingChart, {
+    type: "line",
+    data: {
+      labels: loans.map(l => l.name),
+      datasets: [{ label: "Outstanding", data: loans.map(l => calcEMI(l)*(l.tenure-l.paid)) }]
+    }
+  });
 }
